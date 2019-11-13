@@ -1,3 +1,33 @@
+== 8.1.6 (2017-05-20)
+
+Query cache with bind params (ttw)
+Fix TestIds#test_set_ids_string. Sqlite's serial and integer are a bit different (Boris Peterbarg)
+Associations with inverse fix (Boris Peterbarg)
+Fix save_has_one_association and add a test for it (Boris Peterbarg)
+Fix save_belongs_to_association override (Boris Peterbarg)
+Extend approach from #344 to fix autosave for has_one associations as well (Cameron Finucane)
+
+== 8.1.5 (2017-01-01)
+
+* Don't nest PK twice when looking up id, fixes #319 (Kerey Roper)
+
+== 8.1.4 (2016-07-27)
+
+* Create OR predicates in a nicely balanced tree fixing #320 (Nathan Samson)
+* Fix find in batches (apurvis)
+
+== 8.1.3 (2016-04-16)
+
+* Make CPK work for Arel::Attributes::Attribute (Rick Xing)
+* Change autosave_association.rb so that association autosave can work (Rick Xing)
+* Fix exception when saving "other_ids=" with a has_many :through association where the source
+  association is polymorphic (Tye Shavik)
+* Fix Arel::Nodes::In where left side is not a column (Tye Shavik)
+
+== 8.1.2 (2015-12-13)
+
+* Fix failing tests
+
 == 8.1.1 (2015-08-04)
 
 * Updates to make Travis CI green (Laust Rud Jacobsen)
@@ -7,7 +37,6 @@
 * Update support for Uniquenes validations (Avi Leavitt)
 * Remove call to verify_active_connections! which was removed from AR 4.1 (Steve Pletcher)
 * Aligned the establish connection paramater handling to be similar to latest version of rails (Harish Shetty)
-
 
 == 8.1.0 (2014-03-23)
 

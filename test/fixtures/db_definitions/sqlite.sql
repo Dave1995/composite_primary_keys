@@ -109,6 +109,7 @@ create table departments (
 create table employees (
     id integer not null primary key autoincrement,
     department_id integer null,
+    name text not null default 'anonymous',
     location_id integer null
 );
 
@@ -237,4 +238,13 @@ create table item_groups_items (
     item_group_id   int(11) not null,
     item_group_name varchar(100) not null,
     primary key (item_id, item_group_id, item_group_name)
+);
+
+create table pk_called_ids (
+    id integer not null,
+    reference_code    int         not null,
+    code_label        varchar(50) default null,
+    abbreviation      varchar(50) default null,
+    description       varchar(50) default null,
+    primary key (id, reference_code)
 );

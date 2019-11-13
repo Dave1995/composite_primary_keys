@@ -30,6 +30,9 @@ unless defined?(ActiveRecord)
   require 'active_record'
 end
 
+# Arel files we override
+require 'arel/visitors/to_sql'
+
 # AR files we override
 require 'active_record/counter_cache'
 require 'active_record/fixtures'
@@ -58,6 +61,7 @@ require 'active_record/locking/optimistic'
 require 'active_record/nested_attributes'
 
 require 'active_record/connection_adapters/abstract_adapter'
+require 'active_record/connection_adapters/abstract_mysql_adapter'
 
 require 'active_record/relation/batches'
 require 'active_record/relation/calculations'
@@ -68,6 +72,8 @@ require 'active_record/relation/query_methods'
 require 'active_record/validations/uniqueness'
 
 # CPK files
+require 'composite_primary_keys/arel/visitors/to_sql'
+
 require 'composite_primary_keys/persistence'
 require 'composite_primary_keys/base'
 require 'composite_primary_keys/core'
@@ -94,6 +100,7 @@ require 'composite_primary_keys/associations/singular_association'
 require 'composite_primary_keys/associations/collection_association'
 
 require 'composite_primary_keys/dirty'
+require 'composite_primary_keys/autosave_association'
 
 require 'composite_primary_keys/attribute_methods/primary_key'
 require 'composite_primary_keys/attribute_methods/dirty'
@@ -103,6 +110,7 @@ require 'composite_primary_keys/locking/optimistic'
 require 'composite_primary_keys/nested_attributes'
 
 require 'composite_primary_keys/connection_adapters/abstract_adapter'
+require 'composite_primary_keys/connection_adapters/abstract_mysql_adapter'
 require 'composite_primary_keys/connection_adapters/abstract/connection_specification_changes'
 
 require 'composite_primary_keys/relation/batches'
