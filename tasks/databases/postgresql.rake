@@ -1,48 +1,39 @@
-require File.join(PROJECT_ROOT, 'lib', 'composite_primary_keys')
-require File.join(PROJECT_ROOT, 'test', 'connections', 'connection_spec')
-
 namespace :postgresql do
-  desc 'Create the PostgreSQL test database'
-  task :create_database do
+  task :setup do
+    require 'bundler'
+    Bundler.require(:default, :postgresql)
+  end
+
+  task :create_database => :setup do
+    spec = CompositePrimaryKeys::ConnectionSpec['postgresql']
     ActiveRecord::Base.clear_all_connections!
-    spec = CompositePrimaryKeys::ConnectionSpec['postgresql'].dup
-    database_name = spec.delete('database')
-    spec['database'] = 'postgres'
-    connection = ActiveRecord::Base.establish_connection(spec)
-    ActiveRecord::Base.connection.create_database(database_name)
+    ActiveRecord::Base.establish_connection(spec.dup.merge('database' => 'postgres'))
+    ActiveRecord::Base.connection.create_database(spec['database'])
     ActiveRecord::Base.clear_all_connections!
   end
 
-  desc 'Build the PostgreSQL test database'
-  task :build_database => [:create_database] do
+  desc 'Build the Postgresql test database'
+  task :build_database => :create_database do
+    spec = CompositePrimaryKeys::ConnectionSpec['postgresql']
     ActiveRecord::Base.clear_all_connections!
-    spec = CompositePrimaryKeys::ConnectionSpec['postgresql'].dup
     connection = ActiveRecord::Base.establish_connection(spec)
 
-    path = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'postgresql.sql')
-    sql = File.open(path, 'rb') do |file|
-      file.read
-    end
+    schema = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'postgresql.sql')
+    sql = File.read(schema)
 
-    Rake::Task['postgresql:load_connection'].invoke
     ActiveRecord::Base.connection.execute(sql)
+    ActiveRecord::Base.clear_all_connections!
   end
 
-  desc 'Drop the PostgreSQL test database'
-  task :drop_database => :load_connection do
+  desc 'Drop the Postgresql test database'
+  task :drop_database  => :setup do
+    spec = CompositePrimaryKeys::ConnectionSpec['postgresql']
     ActiveRecord::Base.clear_all_connections!
-    spec = CompositePrimaryKeys::ConnectionSpec['postgresql'].dup
-    database_name = spec.delete('database')
-    spec['database'] = 'postgres'
-    connection = ActiveRecord::Base.establish_connection(spec)
-    ActiveRecord::Base.connection.drop_database(SPEC['database'])
+    connection = ActiveRecord::Base.establish_connection(spec.merge('database' => 'postgres'))
+    ActiveRecord::Base.connection.drop_database(spec['database'])
     ActiveRecord::Base.clear_all_connections!
   end
 
   desc 'Rebuild the PostgreSQL test database'
   task :rebuild_database => [:drop_database, :build_database]
-
-  task :load_connection do
-    require File.join(PROJECT_ROOT, "test", "connections", "native_postgresql", "connection")
-  end
 end

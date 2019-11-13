@@ -8,6 +8,9 @@ require 'rubygems/package_task'
 ::PROJECT_ROOT = File.expand_path(".")
 ::GEM_NAME = 'composite_primary_keys'
 
+require File.join(PROJECT_ROOT, 'lib', 'composite_primary_keys')
+require File.join(PROJECT_ROOT, 'test', 'connections', 'connection_spec')
+
 # Read the spec file
 spec = Gem::Specification.load("#{GEM_NAME}.gemspec")
 
@@ -20,7 +23,7 @@ Dir.glob('tasks/**/*.rake').each do |rake_file|
 end
 
 # Set up test tasks for each supported connection adapter
-%w(mysql sqlite3 oracle oracle_enhanced postgresql ibm_db sqlserver).each do |adapter|
+%w(mysql sqlite oracle oracle_enhanced postgresql ibm_db sqlserver).each do |adapter|
   namespace adapter do
     desc "Run tests using the #{adapter} adapter"
     task "test" do

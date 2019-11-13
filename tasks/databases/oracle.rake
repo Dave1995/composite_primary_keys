@@ -1,27 +1,41 @@
-require File.join(PROJECT_ROOT, 'lib', 'composite_primary_keys')
-require File.join(PROJECT_ROOT, 'test', 'connections', 'connection_spec')
-
 namespace :oracle do
-  desc 'Build the Oracle test database'
-  task :build_database => :load_connection do
-    options_str = connection_string
+  task :setup do
+    require 'bundler'
+    Bundler.require(:default, :oracle)
+  end
 
-    sql = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'oracle.sql')
-    sh %( sqlplus #{options_str} < #{sql} )
+  desc 'Build the Oracle test database'
+  task :build_database => :setup do
+    spec = CompositePrimaryKeys::ConnectionSpec['oracle']
+    ActiveRecord::Base.clear_all_connections!
+    ActiveRecord::Base.establish_connection(spec)
+
+    schema = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'oracle.sql')
+    sql = File.read(schema)
+
+    sql.split(';').each do |command|
+      ActiveRecord::Base.connection.execute(command) unless command.blank?
+    end
+
+    ActiveRecord::Base.clear_all_connections!
   end
 
   desc 'Drop the Oracle test database'
-  task :drop_database => :load_connection do
-    options_str = connection_string
+  task :drop_database => :setup do
+    spec = CompositePrimaryKeys::ConnectionSpec['oracle']
+    ActiveRecord::Base.clear_all_connections!
+    ActiveRecord::Base.establish_connection(spec)
 
-    sql = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'oracle.drop.sql')
-    sh %( sqlplus #{options_str} < #{sql} )
+    schema = File.join(PROJECT_ROOT, 'test', 'fixtures', 'db_definitions', 'oracle.drop.sql')
+    sql = File.read(schema)
+
+    sql.split(';').each do |command|
+      ActiveRecord::Base.connection.execute(command)
+    end
+
+    ActiveRecord::Base.clear_all_connections!
   end
 
   desc 'Rebuild the Oracle test database'
   task :rebuild_database => [:drop_database, :build_database]
-
-  task :load_connection do
-    require File.join(PROJECT_ROOT, "test", "connections", "native_oracle", "connection")
-  end
 end

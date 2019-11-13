@@ -1,4 +1,6 @@
-PROJECT_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+spec_name = ENV['ADAPTER'] || 'postgresql'
+require 'bundler'
+Bundler.require(:default, spec_name.to_sym)
 
 # To make debugging easier, test within this source tree versus an installed gem
 $LOAD_PATH.unshift(File.expand_path('../../lib', __FILE__))
@@ -6,15 +8,19 @@ require 'composite_primary_keys'
 require 'minitest/autorun'
 require 'active_support/test_case'
 
-# Now load the connection spec
-require File.join(PROJECT_ROOT, "test", "connections", "connection_spec")
+# Require the connection spec
+PROJECT_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+require File.join(PROJECT_ROOT, 'test', 'connections', 'connection_spec')
 
-spec_name = ENV['ADAPTER'] || 'postgresql'
 spec = CompositePrimaryKeys::ConnectionSpec[spec_name]
+puts "Loaded #{spec_name}"
 
 # And now connect to the database
-adapter = spec['adapter']
-require File.join(PROJECT_ROOT, "test", "connections", "native_#{spec_name}", "connection")
+ActiveRecord::Base.establish_connection(spec)
+
+if defined?(ActiveRecord::ConnectionAdapters::SQLite3Adapter)
+  require 'composite_primary_keys/connection_adapters/sqlite3_adapter'
+end
 
 # Tell active record about the configuration
 ActiveRecord::Base.configurations[:test] = spec
@@ -26,17 +32,17 @@ I18n.config.enforce_available_locales = true
 
 class ActiveSupport::TestCase
   include ActiveRecord::TestFixtures
-  
-  self.fixture_path = File.dirname(__FILE__) + "/fixtures/"
+
+  self.fixture_path = File.dirname(__FILE__) + '/fixtures/'
   self.use_instantiated_fixtures = false
-  self.use_transactional_fixtures = true
+  self.use_transactional_tests = true
   self.test_order = :random
 
   def assert_date_from_db(expected, actual, message = nil)
-    # SQL Server doesn't have a separate column type just for dates, 
+    # SQL Server doesn't have a separate column type just for dates,
     # so the time is in the string and incorrectly formatted
     if current_adapter?(:SQLServerAdapter)
-      assert_equal expected.strftime("%Y/%m/%d 00:00:00"), actual.strftime("%Y/%m/%d 00:00:00")
+      assert_equal expected.strftime('%Y/%m/%d 00:00:00'), actual.strftime('%Y/%m/%d 00:00:00')
     elsif current_adapter?(:SybaseAdapter)
       assert_equal expected.to_s, actual.to_date.to_s, message
     else
@@ -54,17 +60,17 @@ class ActiveSupport::TestCase
     ActiveRecord::Base.connection.class.class_eval do
       alias_method :execute, :execute_without_query_counting
     end
-    assert_equal num, ActiveRecord::Base.connection.query_count, "#{ActiveRecord::Base.connection.query_count} instead of #{num} queries were executed."
+    assert_equal num, ActiveRecord::Base.connection.query_count, '#{ActiveRecord::Base.connection.query_count} instead of #{num} queries were executed.'
   end
 
   def assert_no_queries(&block)
     assert_queries(0, &block)
   end
-  
+
   cattr_accessor :classes
 
   protected
-  
+
   def testing_with(&block)
     classes.keys.each do |key_test|
       @key_test = key_test
@@ -75,19 +81,19 @@ class ActiveSupport::TestCase
       yield
     end
   end
-  
+
   def first_id
     ids = (1..@primary_keys.length).map {|num| 1}
     composite? ? ids.to_composite_ids : ids.first
   end
-  
+
   def composite?
     @key_test != :single
-  end  
+  end
 
   # Oracle metadata is in all caps.
   def with_quoted_identifiers(s)
-    s.gsub(/"(\w+)"/) { |m|
+    s.gsub(/'(\w+)'/) { |m|
       if ActiveRecord::Base.configurations[:test]['adapter'] =~ /oracle/i
         m.upcase
       else

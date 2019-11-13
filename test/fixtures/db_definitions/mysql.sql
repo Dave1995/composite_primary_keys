@@ -1,5 +1,5 @@
 create table topics (
-    id int not null auto_increment,  
+    id int not null auto_increment,
     name varchar(50) default null,  
     feed_size int default null, 
     primary key (id)
@@ -39,8 +39,8 @@ create table tariffs (
     tariff_id int not null,
     start_date date not null,
     amount integer(11) default null,
-    created_at timestamp,
-    updated_at timestamp,
+    created_at datetime,
+    updated_at datetime,
     primary key (tariff_id, start_date)
 );
 
@@ -155,8 +155,8 @@ create table restaurants (
 create table restaurants_suburbs (
     franchise_id int not null,
     store_id int not null,
-    city_id int not null,
-    suburb_id int not null
+    city_id int default null,
+    suburb_id int default null
 );
 
 create table dorms (
@@ -201,18 +201,27 @@ create table seats (
 );
 
 create table capitols (
-  country varchar(100) default null,
-  city varchar(100) default null,
+  country varchar(100) not null,
+  city varchar(100) not null,
   primary key (country, city)
 );
 
 create table products_restaurants (
   product_id int not null,
-  franchise_id int not null,
-  store_id int not null
+  franchise_id int default null,
+  store_id int default null
 );
 
 create table employees_groups (
   employee_id int not null,
   group_id int not null
+);
+
+create table pk_called_ids (
+  id integer not null,
+  reference_code int not null,
+  code_label varchar(50) default null,
+  abbreviation varchar(50) default null,
+  description varchar(50) default null,
+  primary key (id, reference_code)
 );

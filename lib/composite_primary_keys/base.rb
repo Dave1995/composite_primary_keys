@@ -7,6 +7,45 @@ module ActiveRecord
     NOT_IMPLEMENTED_YET        = 'Not implemented for composite primary keys yet'
 
     class << self
+      alias_method :primary_key_without_composite_key_support=, :primary_key=
+      def primary_key=(keys)
+        unless keys.kind_of?(Array)
+          self.primary_key_without_composite_key_support = keys
+          return
+        end
+
+        @primary_keys = keys.map { |k| k.to_s }.to_composite_keys
+
+        class_eval <<-EOV
+          extend  CompositeClassMethods
+          include CompositeInstanceMethods
+        EOV
+      end
+      alias_method :primary_keys=, :primary_key=
+
+      def set_primary_keys(*keys)
+        ActiveSupport::Deprecation.warn(
+            "Calling set_primary_keys is deprecated. Please use `self.primary_keys = keys` instead."
+        )
+
+        keys = keys.first if keys.first.is_a?(Array)
+        if keys.length == 1
+          self.primary_key = keys.first
+        else
+          self.primary_keys = keys
+        end
+      end
+
+      def composite?
+        false
+      end
+    end
+
+    def composite?
+      self.class.composite?
+    end
+
+    module CompositeClassMethods
       def primary_keys
         unless defined?(@primary_keys)
           reset_primary_keys
@@ -21,51 +60,12 @@ module ActiveRecord
         end
       end
 
-      def primary_key_with_composite_key_support=(keys)
-        unless keys.kind_of?(Array)
-          self.primary_key_without_composite_key_support = keys
-          return
-        end
-
-        @primary_keys = keys.map { |k| k.to_s }.to_composite_keys
-
-        class_eval <<-EOV
-          extend  CompositeClassMethods
-          include CompositeInstanceMethods
-        EOV
-      end
-      alias_method_chain :primary_key=, :composite_key_support
-      alias_method :primary_keys=, :primary_key=
-
-      def set_primary_keys(*keys)
-        ActiveSupport::Deprecation.warn(
-            "Calling set_primary_keys is deprecated. Please use `self.primary_keys = keys` instead."
-        )
-
-        keys = keys.first if keys.first.is_a?(Array)
-        if keys.length == 1
-          self.primary_key = keys.first
-        else
-          self.primary_keys = keys
-        end
-     end
-
-      def composite?
-        false
-      end
-    end
-
-    def composite?
-      self.class.composite?
-    end
-
-    module CompositeClassMethods
       def primary_key
         primary_keys
       end
 
       def primary_key=(keys)
-        primary_keys = keys
+        self.primary_keys = keys
       end
 
       def composite?

@@ -1,8 +1,8 @@
 module ActiveRecord
   class Relation
     alias :initialize_without_cpk :initialize
-    def initialize(klass, table, values = {})
-      initialize_without_cpk(klass, table, values)
+    def initialize(klass, table, predicate_builder, values = {})
+      initialize_without_cpk(klass, table, predicate_builder, values)
       add_cpk_support if klass && klass.composite?
     end
 
@@ -16,60 +16,113 @@ module ActiveRecord
       extend CompositePrimaryKeys::CompositeRelation
     end
 
-    alias :where_values_hash_without_cpk :where_values_hash
-    def where_values_hash(relation_table_name = table_name)
-      # CPK
-      nodes_from_and = where_values.grep(Arel::Nodes::And).map { |and_node|
-        and_node.children.grep(Arel::Nodes::Equality)
-      }.flatten
+    silence_warnings do
+      def _update_record(values, id, id_was) # :nodoc:
+        substitutes, binds = substitute_values values
 
-      # CPK
-      # equalities = where_values.grep(Arel::Nodes::Equality).find_all { |node|
-      #   node.left.relation.name == relation_table_name
-      # }
-      equalities = (nodes_from_and + where_values.grep(Arel::Nodes::Equality)).find_all { |node|
-        node.left.relation.name == relation_table_name
-      }
-
-      binds = Hash[bind_values.find_all(&:first).map { |column, v| [column.name, v] }]
-
-      Hash[equalities.map { |where|
-        name = where.left.name
-        [name, binds.fetch(name.to_s) {
-          case where.right
-          when Array then where.right.map(&:val)
-          else
-            where.right.val
-          end
-        }]
-      }]
-    end
-
-    def _update_record(values, id, id_was)
-      substitutes, binds = substitute_values values
-
-      # CPK
-      um = if self.composite?
-        relation = @klass.unscoped.where(cpk_id_predicate(@klass.arel_table, @klass.primary_key, id_was || id))
-
-        relation.arel.compile_update(substitutes, @klass.primary_key)
-      else
         scope = @klass.unscoped
 
         if @klass.finder_needs_type_condition?
           scope.unscope!(where: @klass.inheritance_column)
         end
 
-        relation = scope.where(@klass.primary_key => (id_was || id))
-        binds += relation.bind_values
+        # CPK
+        if self.composite?
+          # Not sure if this is a good idea, but replace nil id_was with the new id
+          id_update = id_was.each_with_index.map do |value, i|
+            value || id[i]
+          end
 
-        relation.arel.compile_update(substitutes, @klass.primary_key)
+          relation = @klass.unscoped.where(cpk_id_predicate(@klass.arel_table, @klass.primary_key, id_update))
+        else
+          relation = scope.where(@klass.primary_key => (id_was || id))
+        end
+
+
+        bvs = binds + relation.bound_attributes
+        um = relation
+          .arel
+          .compile_update(substitutes, @klass.primary_key)
+
+        @klass.connection.update(
+          um,
+          'SQL',
+          bvs,
+        )
+      end
+    end
+
+    def update_all(updates)
+      raise ArgumentError, "Empty list of attributes to change" if updates.blank?
+
+      stmt = Arel::UpdateManager.new
+
+      stmt.set Arel.sql(@klass.send(:sanitize_sql_for_assignment, updates))
+      stmt.table(table)
+
+      if joins_values.any?
+        # CPK
+        #@klass.connection.join_to_update(stmt, arel, arel_attribute(primary_key))
+        if primary_key.kind_of?(Array)
+          attributes = primary_key.map do |key|
+            arel_attribute(key)
+          end
+          @klass.connection.join_to_update(stmt, arel, attributes.to_composite_keys)
+        else
+          @klass.connection.join_to_update(stmt, arel, arel_attribute(primary_key))
+        end
+      else
+        stmt.key = arel_attribute(primary_key)
+        stmt.take(arel.limit)
+        stmt.order(*arel.orders)
+        stmt.wheres = arel.constraints
       end
 
-      @klass.connection.update(
-        um,
-        'SQL',
-        binds)
+      @klass.connection.update stmt, 'SQL', bound_attributes
+    end
+
+
+    def delete_all(conditions = nil)
+      invalid_methods = INVALID_METHODS_FOR_DELETE_ALL.select { |method|
+        if MULTI_VALUE_METHODS.include?(method)
+          send("#{method}_values").any?
+        elsif SINGLE_VALUE_METHODS.include?(method)
+          send("#{method}_value")
+        elsif CLAUSE_METHODS.include?(method)
+          send("#{method}_clause").any?
+        end
+      }
+      if invalid_methods.any?
+        raise ActiveRecordError.new("delete_all doesn't support #{invalid_methods.join(', ')}")
+      end
+
+      if conditions
+        ActiveSupport::Deprecation.warn(<<-MESSAGE.squish)
+          Passing conditions to delete_all is deprecated and will be removed in Rails 5.1.
+          To achieve the same use where(conditions).delete_all.
+        MESSAGE
+        where(conditions).delete_all
+      else
+        stmt = Arel::DeleteManager.new
+        stmt.from(table)
+
+        # CPK
+        if joins_values.any? && @klass.composite?
+          arel_attributes = Array(primary_key).map do |key|
+            arel_attribute(key)
+          end.to_composite_keys
+          @klass.connection.join_to_delete(stmt, arel, arel_attributes)
+        elsif joins_values.any?
+          @klass.connection.join_to_delete(stmt, arel, arel_attribute(primary_key))
+        else
+          stmt.wheres = arel.constraints
+        end
+
+        affected = @klass.connection.delete(stmt, 'SQL', bound_attributes)
+
+        reset
+        affected
+      end
     end
   end
 end

@@ -1,3 +1,80 @@
+== 9.0.9 (2018-03-06)
+
+* Fix update statements that incorrectly pass NULL values for the primary key components (Sean Linsley)
+
+== 9.0.8 (2017-10-11)
+
+* Fix Paper Trail compatibility (Sean Linsley)
+
+== 9.0.7 (2017-05-22)
+
+* Update sqlite3 to support deletes and updates (Charlie Savage)
+* Specify version for sql server gem so it works with Rails 5.0 (Charlie Savage)
+* Use `datetime` datatype to address Invalid default value for updated_at (Yasuo Honda)
+* Fix ORA-00900 error when it attempts to execute blank statement (pustomytnyk)
+* Override ActiveRecord::Associations::CollectionAssociation#ids_reader (pustomytnyk)
+* Only define #primary_keys if #primary_keys=(value) is called (Charlie Savage)
+* Change `timestamp` to `datetime` for MySQL as ActiveRecord timestamps type does (Oriol Collel)
+* Fix incorrect case statement to get PK for SQLServer (Oriol Collel)
+* Fixes random failures in test_preload_of_polymorphic_association (Boris Peterbarg)
+
+== 9.0.6 (2017-01-08)
+
+* Uncomment tests (Sammy Larbi)
+* Update readme (Charlie Savage)
+
+== 9.0.5 (2017-01-02)
+
+* Don't nest PK twice when looking up id, fixes #319 (Kerey Roper)
+* Simplify database setup  for tests (Charlie Savage)
+* Revamp gem management (Charlie Savage)
+* Add support for Relation#update_all when using joins (Charlie Savage)
+* Add erb support to test database.yml files (Charlie Savage)
+* Sqlserver fixes for ordering (Charlie Savage)
+* Sqlserver refresh (Charlie Savage)
+* Oracle refresh (Charlie Savage)
+* Fix delete_all for MySql (Charlie Savage)
+* Added test cases for preloading associations with and without conditions (Martin Körner)
+* Revamp single association handling to correctly setup SQL binds (Charlie Savage)
+* Remove references to ActiveModel - #352 (Charlie Savage)
+* Fixes for #232, #359, #367 and #371 (Charlie Savage)
+
+== 9.0.4 (2016-08-17)
+* Do not set associations to readonly.  See https://github.com/rails/rails/issues/24093 (Charlie Savage)
+
+== 9.0.2 (2016-08-10)
+* Fix delete_all when used with a join (Charlie Savage)
+
+== 9.0.1 (2016-07-27)
+* Create OR predicates in a nicely balanced tree fixing #320 (Nathan Samson)
+
+== 9.0.0 (2016-07-06)
+* Support connection_specification_name in rails5.0.0.rc1 (pocari)
+
+== 9.0.0.beta1 (2016-04-16)
+* Rails 5 beta support (Sammy Larbi)
+
+== 8.1.5 (2017-01-01)
+
+* Don't nest PK twice when looking up id, fixes #319 (Kerey Roper)
+
+== 8.1.4 (2016-07-27)
+
+* Create OR predicates in a nicely balanced tree fixing #320 (Nathan Samson)
+* Fix find in batches (apurvis)
+
+== 8.1.3 (2016-04-16)
+
+* Make CPK work for Arel::Attributes::Attribute (Rick Xing)
+* Change autosave_association.rb so that association autosave can work (Rick Xing)
+* Fix exception when saving "other_ids=" with a has_many :through association where the source
+  association is polymorphic (Tye Shavik)
+* Fix Arel::Nodes::In where left side is not a column (Tye Shavik)
+
+== 8.1.2 (2015-12-13)
+
+* Fix failing tests
+
 == 8.1.1 (2015-08-04)
 
 * Updates to make Travis CI green (Laust Rud Jacobsen)

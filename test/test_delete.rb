@@ -4,50 +4,41 @@ class TestDelete < ActiveSupport::TestCase
   fixtures :articles, :departments, :employees, :products, :tariffs, :product_tariffs,
            :reference_types, :reference_codes
 
-  CLASSES = {
-      :single => {
-          :class => ReferenceType,
-          :primary_keys => :reference_type_id,
-      },
-      :dual   => {
-          :class => ReferenceCode,
-          :primary_keys => [:reference_type_id, :reference_code],
-      },
-  }
+  def test_delete_one
+    assert_equal(5, ReferenceCode.count)
+    ReferenceCode.first.delete
+    assert_equal(4, ReferenceCode.count)
+  end
 
-  def setup
-    self.class.classes = CLASSES
+  def test_delete_one_with_id
+    assert_equal(5, ReferenceCode.count)
+    ReferenceCode.delete(ReferenceCode.first.id)
+    assert_equal(4, ReferenceCode.count)
   end
 
   def test_destroy_one
-    testing_with do
-      assert @first.destroy
-    end
-  end
-
-  def test_destroy_one_alone_via_class
-    testing_with do
-      assert @klass.destroy(@first.id)
-    end
-  end
-
-  def test_delete_one_alone
-    testing_with do
-      assert @klass.delete(@first.id)
-    end
-  end
-
-  def test_delete_many
-    testing_with do
-      to_delete = @klass.limit(2)
-      assert_equal 2, to_delete.length
-    end
+    assert_equal(5, ReferenceCode.count)
+    ReferenceCode.first.destroy
+    assert_equal(4, ReferenceCode.count)
   end
 
   def test_delete_all
-    testing_with do
-      @klass.delete_all
-    end
+    refute_empty(ReferenceCode.all)
+    ReferenceCode.delete_all
+    assert_empty(ReferenceCode.all)
+  end
+
+  def test_delete_all_with_join
+    department = departments(:accounting)
+
+    assert_equal(4, Department.count)
+
+    Department.joins(:employees).
+               where('departments.department_id = ?', department.department_id).
+               where('departments.location_id = ?', department.location_id).
+               delete_all
+
+    assert_equal(3, Department.count)
   end
 
   def test_clear_association
@@ -69,6 +60,17 @@ class TestDelete < ActiveSupport::TestCase
     assert_equal 1, department.employees.size, "After delete employee count should be 1."
     department.reload
     assert_equal 1, department.employees.size, "After delete and a reload from DB employee count should be 1."
+  end
+
+  def test_has_many_replace
+    tariff = tariffs(:flat)
+    assert_equal(1, tariff.product_tariffs.length)
+
+    tariff.product_tariffs = [product_tariffs(:first_free), product_tariffs(:second_free)]
+    tariff.reload
+
+    assert_equal(2, tariff.product_tariffs.length)
+    refute(tariff.product_tariffs.include?(tariff))
   end
 
   def test_destroy_has_one

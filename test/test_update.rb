@@ -40,8 +40,6 @@ class TestUpdate < ActiveSupport::TestCase
     obj = ReferenceCode.find([1,1])
     obj.reference_type_id = 2
     obj.reference_code = 3
-    assert(obj.primary_key_changed?)
-    assert_equal({"reference_type_id" => 1, "reference_code" => 1}, obj.primary_key_was)
     assert_equal({"reference_type_id" => 2, "reference_code" => 3}, obj.ids_hash)
     assert(obj.save)
     assert(obj.reload)
@@ -61,11 +59,18 @@ class TestUpdate < ActiveSupport::TestCase
   end
 
   def test_update_all
-    assert_nothing_raised do
-      reference_code = ReferenceCode.create
-      primary_key = reference_code.class.primary_key
-      ReferenceCode.where(primary_key => reference_code[primary_key]).
-        update_all(description: 'random value')
+    ReferenceCode.update_all(description: 'random value')
+
+    ReferenceCode.all.each do |reference_code|
+      assert_equal('random value', reference_code.description)
+    end
+  end
+
+  def test_update_all_join
+    ReferenceCode.joins(:reference_type).update_all(description: 'random value')
+
+    ReferenceCode.all.each do |reference_code|
+      assert_equal('random value', reference_code.description)
     end
   end
 end

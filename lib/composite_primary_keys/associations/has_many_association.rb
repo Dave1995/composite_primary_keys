@@ -1,6 +1,23 @@
 module ActiveRecord
   module Associations
     class HasManyAssociation
+      include CompositePrimaryKeys::Predicates
+
+      def delete_records(records, method)
+        if method == :destroy
+          records.each(&:destroy!)
+          update_counter(-records.length) unless reflection.inverse_updates_counter_cache?
+          return
+        # Zerista
+        elsif self.reflection.klass.composite?
+          predicate = cpk_in_predicate(self.scope.table, self.reflection.klass.primary_keys, records.map(&:id))
+          scope = self.scope.where(predicate)
+        else
+          scope = self.scope.where(reflection.klass.primary_key => records)
+        end
+        update_counter(-delete_count(method, scope))
+      end
+
       def delete_count(method, scope)
         if method == :delete_all
           scope.delete_all
@@ -12,46 +29,6 @@ module ActiveRecord
             mem
           end
           scope.update_all(conds)
-        end
-      end
-
-      def delete_records(records, method)
-        if method == :destroy
-          records.each(&:destroy!)
-          update_counter(-records.length) unless inverse_updates_counter_cache?
-        else
-          if records == :all || !reflection.klass.primary_key
-            scope = self.scope
-          else
-            # CPK
-            # scope = self.scope.where(reflection.klass.primary_key => records)
-            table = Arel::Table.new(reflection.table_name)
-            and_conditions = records.map do |record|
-              eq_conditions = Array(reflection.association_primary_key).map do |name|
-                table[name].eq(record[name])
-              end
-              Arel::Nodes::And.new(eq_conditions)
-            end
-
-            condition = and_conditions.shift
-            and_conditions.each do |and_condition|
-              condition = condition.or(and_condition)
-            end
-
-            scope = self.scope.where(condition)
-          end
-
-          if method == :delete_all
-            update_counter(-scope.delete_all)
-          else
-            # CPK
-            # update_counter(-scope.update_all(reflection.foreign_key => nil))
-            update_hash = Array(reflection.foreign_key).inject(Hash.new) do |hash, key|
-              hash[key] = nil
-              hash
-            end
-            update_counter(-scope.update_all(update_hash))
-          end
         end
       end
 

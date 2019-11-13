@@ -8,21 +8,22 @@ module CompositePrimaryKeys
       end
     end
 
-    def cpk_or_predicate(predicates)
+    def cpk_or_predicate(predicates, group = true)
       if predicates.length <= 1
-        predicates
+        predicates.first
       else
-        predicates_copy = predicates.dup
-        or_predicate = ::Arel::Nodes::Or.new(*(predicates_copy.slice!(0,2)))
-        predicates_copy.inject(or_predicate) do |mem, predicate|
-          ::Arel::Nodes::Or.new(mem, predicate)
+        split_point = predicates.length / 2
+        predicates_first_half = predicates[0...split_point]
+        predicates_second_half = predicates[split_point..-1]
+
+        or_predicate = ::Arel::Nodes::Or.new(cpk_or_predicate(predicates_first_half, false),
+                                             cpk_or_predicate(predicates_second_half, false))
+
+        if group
+          ::Arel::Nodes::Grouping.new(or_predicate)
+        else
+          or_predicate
         end
-        # or_predicate = predicates.map do |predicate|
-        #   ::Arel::Nodes::Grouping.new(predicate)
-        # end.inject do |memo, node|
-        #   ::Arel::Nodes::Or.new(memo, node)
-        # end
-        ::Arel::Nodes::Grouping.new(or_predicate)
       end
     end
 
@@ -38,6 +39,7 @@ module CompositePrimaryKeys
       key2_fields = Array(key2).map {|key| table2[key]}
 
       eq_predicates = key1_fields.zip(key2_fields).map do |key_field1, key_field2|
+        key_field2 = Arel::Nodes::Quoted.new(key_field2) unless Arel::Attributes::Attribute === key_field2
         key_field1.eq(key_field2)
       end
       cpk_and_predicate(eq_predicates)

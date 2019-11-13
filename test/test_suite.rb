@@ -8,7 +8,6 @@
   test_composite_arrays
   test_create
   test_delete
-  test_delete_all
   test_dumpable
   test_dup
   test_enum
@@ -23,6 +22,7 @@
   test_pagination
   test_polymorphic
   test_predicates
+  test_preload
   test_santiago
   test_serialize
   test_touch

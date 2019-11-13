@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2006-2012 Nic Williams and Charlie Savage
+# Copyright (c) 2006-2016 Nic Williams and Charlie Savage
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -26,7 +26,7 @@ $:.unshift(File.dirname(__FILE__)) unless
 
 unless defined?(ActiveRecord)
   require 'rubygems'
-  gem 'activerecord', '~>4.2.0'
+  gem 'activerecord', '~>5.0.0.beta3'
   require 'active_record'
 end
 
@@ -38,6 +38,7 @@ require 'active_record/persistence'
 require 'active_record/relation'
 require 'active_record/sanitization'
 require 'active_record/attribute_methods'
+require 'active_record/autosave_association'
 
 require 'active_record/associations/association'
 require 'active_record/associations/association_scope'
@@ -50,7 +51,6 @@ require 'active_record/associations/preloader/belongs_to'
 require 'active_record/associations/singular_association'
 require 'active_record/associations/collection_association'
 
-require 'active_record/attribute_set/builder'
 require 'active_record/attribute_methods/primary_key'
 require 'active_record/attribute_methods/read'
 require 'active_record/attribute_methods/write'
@@ -58,14 +58,14 @@ require 'active_record/locking/optimistic'
 require 'active_record/nested_attributes'
 
 require 'active_record/connection_adapters/abstract_adapter'
+require 'active_record/connection_adapters/abstract_mysql_adapter'
 
 require 'active_record/relation/batches'
+require 'active_record/relation/where_clause'
 require 'active_record/relation/calculations'
 require 'active_record/relation/finder_methods'
 require 'active_record/relation/predicate_builder'
 require 'active_record/relation/query_methods'
-
-require 'active_record/validations/uniqueness'
 
 # CPK files
 require 'composite_primary_keys/persistence'
@@ -76,8 +76,8 @@ require 'composite_primary_keys/composite_predicates'
 require 'composite_primary_keys/fixtures'
 require 'composite_primary_keys/relation'
 require 'composite_primary_keys/sanitization'
-require 'composite_primary_keys/attribute_set/builder'
 require 'composite_primary_keys/attribute_methods'
+require 'composite_primary_keys/autosave_association'
 require 'composite_primary_keys/version'
 
 require 'composite_primary_keys/associations/association'
@@ -88,27 +88,26 @@ require 'composite_primary_keys/associations/join_dependency'
 require 'composite_primary_keys/associations/join_dependency/join_association'
 require 'composite_primary_keys/associations/preloader/association'
 require 'composite_primary_keys/associations/preloader/belongs_to'
-require 'composite_primary_keys/associations/singular_association'
 require 'composite_primary_keys/associations/collection_association'
 
-require 'composite_primary_keys/dirty'
-
 require 'composite_primary_keys/attribute_methods/primary_key'
-require 'composite_primary_keys/attribute_methods/dirty'
 require 'composite_primary_keys/attribute_methods/read'
 require 'composite_primary_keys/attribute_methods/write'
 require 'composite_primary_keys/locking/optimistic'
 require 'composite_primary_keys/nested_attributes'
 
 require 'composite_primary_keys/connection_adapters/abstract_adapter'
-require 'composite_primary_keys/connection_adapters/abstract/connection_specification_changes'
+require 'composite_primary_keys/connection_adapters/abstract_mysql_adapter'
 
 require 'composite_primary_keys/relation/batches'
+require 'composite_primary_keys/relation/where_clause'
 require 'composite_primary_keys/relation/calculations'
 require 'composite_primary_keys/relation/finder_methods'
 require 'composite_primary_keys/relation/predicate_builder'
 require 'composite_primary_keys/relation/query_methods'
 
-require 'composite_primary_keys/validations/uniqueness'
-
 require 'composite_primary_keys/composite_relation'
+
+require 'composite_primary_keys/arel/in'
+require 'composite_primary_keys/arel/to_sql'
+require 'composite_primary_keys/arel/sqlserver'

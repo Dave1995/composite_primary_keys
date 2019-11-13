@@ -22,7 +22,7 @@ module CompositePrimaryKeys
 
   class CompositeKeys < Array
 
-  def self.parse(value)
+    def self.parse(value)
       case value
       when Array
         value.to_composite_keys
@@ -32,6 +32,14 @@ module CompositePrimaryKeys
         raise(ArgumentError, "Unsupported type: #{value}")
       end
     end
+
+    def in(other)
+      case other
+        when Arel::SelectManager
+          CompositePrimaryKeys::Nodes::In.new(self, other.ast)
+      end
+    end
+
 
     def to_s
       # Doing this makes it easier to parse Base#[](attr_name)

@@ -71,12 +71,24 @@ class TestAssociations < ActiveSupport::TestCase
     assert_equal(3, tariffs.inject(0) {|sum, tariff| sum + tariff.product_tariffs.length})
   end
 
+  def test_association_with_composite_primary_key_can_be_autosaved
+    room = Room.new(dorm_id: 1000, room_id: 1001)
+    room_assignment = RoomAssignment.new(student_id: 1000)
+    room_assignment.room = room
+    room_assignment.save
+    room_assignment.reload
+    assert_equal(room_assignment.dorm_id, 1000)
+    assert_equal(room_assignment.room_id, 1001)
+  end
+
   def test_has_one_association_is_not_cached_to_where_it_returns_the_wrong_one
     engineering = departments(:engineering)
     engineering_head = engineering.head
+    assert_equal(employees(:sarah), engineering_head)
 
     accounting = departments(:accounting)
     accounting_head = accounting.head
+    assert_equal(employees(:steve), accounting_head)
 
     refute_equal accounting_head, engineering_head
   end
@@ -257,7 +269,7 @@ class TestAssociations < ActiveSupport::TestCase
     assert_not_nil(department.head)
   end
 
-  def test_has_many_build__simple_key
+  def test_has_many_build_simple_key
     user = users(:santiago)
     reading = user.readings.build
     assert_equal user.id, reading.user_id
@@ -335,7 +347,13 @@ class TestAssociations < ActiveSupport::TestCase
   def test_foreign_key_present_with_null_association_ids
     group = Group.new
     group.memberships.build
-    associations = group.association_cache[:memberships]
+    associations = group.association(:memberships)
     assert_equal(false, associations.send('foreign_key_present?'))
+  end
+
+  def test_ids_equals_for_non_CPK_case
+    article = Article.new
+    article.reading_ids = Reading.pluck(:id)
+    assert_equal article.reading_ids, Reading.pluck(:id)
   end
 end
